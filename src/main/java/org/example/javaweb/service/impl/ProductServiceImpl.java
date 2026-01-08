@@ -32,6 +32,12 @@ public class ProductServiceImpl implements ProductService {
                 .orElseThrow(() -> new RuntimeException("Product not found"));
     }
 
+    @Override
+    public List<Product> findByCategoryIdWithCategory(Long categoryId) {
+        return productRepository.findByCategoryIdWithCategory(categoryId);
+    }
+
+
 
 
     @Override

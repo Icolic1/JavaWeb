@@ -39,9 +39,10 @@ public class CatalogController {
         model.addAttribute("category", CategoryMapper.toDto(category));
 
         // proizvodi: ako na viewu ne čitaš category.name, može i obični query
-        List<ProductListDto> products = productService.findByCategoryId(id).stream()
-                .map(p -> new ProductListDto(p.getId(), p.getName(), p.getPrice(), null, p.getStock()))
+        List<ProductListDto> products = productService.findByCategoryIdWithCategory(id).stream()
+                .map(ProductMapper::toListDto)
                 .toList();
+
 
         model.addAttribute("products", products);
         return "catalog/products";

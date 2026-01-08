@@ -1,11 +1,12 @@
 package org.example.javaweb.web.mapper;
 
+import org.example.javaweb.domain.Category;
 import org.example.javaweb.domain.Product;
 import org.example.javaweb.web.dto.ProductDetailsDto;
 import org.example.javaweb.web.dto.ProductFormDto;
 import org.example.javaweb.web.dto.ProductListDto;
 
-public class ProductMapper {
+public final class ProductMapper {
 
     private ProductMapper() {}
 
@@ -13,8 +14,9 @@ public class ProductMapper {
         return new ProductListDto(
                 p.getId(),
                 p.getName(),
+                p.getDescription(),
                 p.getPrice(),
-                p.getCategory() != null ? p.getCategory().getName() : null,
+                (p.getCategory() != null ? p.getCategory().getName() : null),
                 p.getStock()
         );
     }
@@ -40,5 +42,30 @@ public class ProductMapper {
         dto.setStock(p.getStock());
         dto.setCategoryId(p.getCategory() != null ? p.getCategory().getId() : null);
         return dto;
+    }
+
+    /** Create: mapira formu u novi Product entitet. */
+    public static Product toNewEntity(ProductFormDto form, Category category) {
+        return Product.builder()
+                .name(form.getName())
+                .description(form.getDescription())
+                .price(form.getPrice())
+                .stock(form.getStock())
+                .category(category)
+                .build();
+    }
+
+    /**
+     * Update: mapira formu u Product "payload" za update.
+     * Namjerno ne postavlja id (id dolazi iz path varijable).
+     */
+    public static Product toUpdateEntity(ProductFormDto form, Category category) {
+        return Product.builder()
+                .name(form.getName())
+                .description(form.getDescription())
+                .price(form.getPrice())
+                .stock(form.getStock())
+                .category(category)
+                .build();
     }
 }

@@ -4,7 +4,9 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.example.javaweb.domain.Category;
 import org.example.javaweb.domain.Product;
+import org.example.javaweb.web.dto.CategoryDto;
 import org.example.javaweb.web.dto.ProductFormDto;
+import org.example.javaweb.web.mapper.CategoryMapper;
 import org.example.javaweb.web.mapper.ProductMapper;
 import org.example.javaweb.service.CategoryService;
 import org.example.javaweb.service.ProductService;
@@ -13,7 +15,7 @@ import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.stream.Collectors;
+import java.util.List;
 
 @Controller
 @RequestMapping("/admin/products")
@@ -25,14 +27,8 @@ public class ProductAdminController {
 
     @GetMapping
     public String index(Model model) {
-        model.addAttribute("products",
-                productService.findAllWithCategory().stream()
-                        .map(ProductMapper::toListDto)
-                        .collect(Collectors.toList())
-        );
-
+        populateIndexModel(model);
         model.addAttribute("productForm", new ProductFormDto());
-        model.addAttribute("categories", categoryService.findAll());
         return "admin/products/index";
     }
 
@@ -42,24 +38,12 @@ public class ProductAdminController {
                          Model model) {
 
         if (bindingResult.hasErrors()) {
-            model.addAttribute("products",
-                    productService.findAllWithCategory().stream()
-                            .map(ProductMapper::toListDto)
-                            .collect(Collectors.toList())
-            );
-            model.addAttribute("categories", categoryService.findAll());
+            populateIndexModel(model);
             return "admin/products/index";
         }
 
         Category category = categoryService.findById(form.getCategoryId());
-
-        Product product = Product.builder()
-                .name(form.getName())
-                .description(form.getDescription())
-                .price(form.getPrice())
-                .stock(form.getStock())
-                .category(category)
-                .build();
+        Product product = ProductMapper.toNewEntity(form, category);
 
         productService.create(product);
         return "redirect:/admin/products";
@@ -70,7 +54,7 @@ public class ProductAdminController {
         Product product = productService.findByIdWithCategory(id);
 
         model.addAttribute("productForm", ProductMapper.toFormDto(product));
-        model.addAttribute("categories", categoryService.findAll());
+        model.addAttribute("categories", categoryDtos());
         return "admin/products/edit";
     }
 
@@ -81,21 +65,14 @@ public class ProductAdminController {
                        Model model) {
 
         if (bindingResult.hasErrors()) {
-            model.addAttribute("categories", categoryService.findAll());
+            model.addAttribute("categories", categoryDtos());
             return "admin/products/edit";
         }
 
         Category category = categoryService.findById(form.getCategoryId());
+        Product payload = ProductMapper.toUpdateEntity(form, category);
 
-        Product product = Product.builder()
-                .name(form.getName())
-                .description(form.getDescription())
-                .price(form.getPrice())
-                .stock(form.getStock())
-                .category(category)
-                .build();
-
-        productService.update(id, product);
+        productService.update(id, payload);
         return "redirect:/admin/products";
     }
 
@@ -103,5 +80,19 @@ public class ProductAdminController {
     public String delete(@PathVariable Long id) {
         productService.delete(id);
         return "redirect:/admin/products";
+    }
+
+    private void populateIndexModel(Model model) {
+        model.addAttribute("products", productService.findAllWithCategory().stream()
+                .map(ProductMapper::toListDto)
+                .toList());
+
+        model.addAttribute("categories", categoryDtos());
+    }
+
+    private List<CategoryDto> categoryDtos() {
+        return categoryService.findAll().stream()
+                .map(CategoryMapper::toDto)
+                .toList();
     }
 }

@@ -8,6 +8,8 @@ public interface ProductService {
     List<Product> findAllWithCategory();
     Product findByIdWithCategory(Long id);
     List<Product> findByCategoryId(Long categoryId);
+    List<Product> findByCategoryIdWithCategory(Long categoryId);
+
 
     List<Product> findAll();
     Product findById(Long id);

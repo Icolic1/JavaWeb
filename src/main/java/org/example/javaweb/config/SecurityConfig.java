@@ -19,6 +19,7 @@ public class SecurityConfig {
                         // public
                         .requestMatchers(
                                 "/",
+                                "/login",
                                 "/access-denied",
                                 "/css/**",
                                 "/js/**",
@@ -28,6 +29,7 @@ public class SecurityConfig {
                                 "/products/**",
                                 "/cart/**"
                         ).permitAll()
+
 
 
                         // admin only
@@ -40,10 +42,10 @@ public class SecurityConfig {
                         .accessDeniedPage("/access-denied")
                 )
                 .formLogin(form -> form
-                        // default Spring Security login page
                         .defaultSuccessUrl("/", true)
                         .permitAll()
                 )
+
                 .logout(logout -> logout
                         .logoutSuccessUrl("/")
                         .permitAll()

@@ -2,8 +2,8 @@ package org.example.javaweb.web.admin;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.example.javaweb.domain.Category;
 import org.example.javaweb.web.dto.CategoryDto;
+import org.example.javaweb.web.dto.CategoryFormDto;
 import org.example.javaweb.web.mapper.CategoryMapper;
 import org.example.javaweb.service.CategoryService;
 import org.springframework.stereotype.Controller;
@@ -22,32 +22,22 @@ public class CategoryAdminController {
 
     @GetMapping
     public String index(Model model) {
-        List<CategoryDto> categories = categoryService.findAll()
-                .stream()
-                .map(CategoryMapper::toDto)
-                .toList();
-
-        model.addAttribute("categories", categories);
-        model.addAttribute("categoryForm", new Category()); // ili CategoryFormDto ako želiš; za sad minimalno
+        populateList(model);
+        model.addAttribute("categoryForm", new CategoryFormDto());
         return "admin/categories/index";
     }
 
     @PostMapping
-    public String create(@Valid @ModelAttribute("categoryForm") Category category,
+    public String create(@Valid @ModelAttribute("categoryForm") CategoryFormDto form,
                          BindingResult bindingResult,
                          Model model) {
 
         if (bindingResult.hasErrors()) {
-            List<CategoryDto> categories = categoryService.findAll()
-                    .stream()
-                    .map(CategoryMapper::toDto)
-                    .toList();
-
-            model.addAttribute("categories", categories);
+            populateList(model);
             return "admin/categories/index";
         }
 
-        categoryService.create(category);
+        categoryService.create(CategoryMapper.toEntity(form));
         return "redirect:/admin/categories";
     }
 
@@ -55,5 +45,12 @@ public class CategoryAdminController {
     public String delete(@PathVariable Long id) {
         categoryService.delete(id);
         return "redirect:/admin/categories";
+    }
+
+    private void populateList(Model model) {
+        List<CategoryDto> categories = categoryService.findAll().stream()
+                .map(CategoryMapper::toDto)
+                .toList();
+        model.addAttribute("categories", categories);
     }
 }
