@@ -30,6 +30,8 @@ public class SecurityConfig {
                                 "/cart/**"
                         ).permitAll()
 
+                        .requestMatchers("/checkout/**").hasRole("USER")
+
 
 
                         // admin only
