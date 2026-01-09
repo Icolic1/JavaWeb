@@ -32,6 +32,9 @@ public class SecurityConfig {
 
                         .requestMatchers("/checkout/**").hasRole("USER")
 
+                        .requestMatchers("/my/**").hasRole("USER")
+
+
 
 
                         // admin only
