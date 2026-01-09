@@ -96,12 +96,18 @@ public class OrderServiceImpl implements OrderService {
     }
 
     private boolean isAllowedTransition(OrderStatus from, OrderStatus to) {
-        // Minimalna state machine logika (proširi po potrebi)
+
+        // CANCELLED je uvijek dopušten (osim ako je već CANCELLED)
+        if (to == OrderStatus.CANCELLED) {
+            return from != OrderStatus.CANCELLED;
+        }
+
         return switch (from) {
-            case CREATED -> (to == OrderStatus.PAID || to == OrderStatus.CANCELLED);
-            case PAID -> (to == OrderStatus.SHIPPED || to == OrderStatus.CANCELLED);
-            case SHIPPED -> false;     // nakon slanja nema promjena
-            case CANCELLED -> false;   // otkazano je terminalno
+            case CREATED -> (to == OrderStatus.PAID);
+            case PAID -> (to == OrderStatus.SHIPPED);
+            case SHIPPED -> false;
+            case CANCELLED -> false;
         };
     }
+
 }

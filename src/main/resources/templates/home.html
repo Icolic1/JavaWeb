@@ -1,5 +1,6 @@
 <!doctype html>
-<html lang="hr" xmlns:th="http://www.thymeleaf.org"
+<html lang="hr"
+      xmlns:th="http://www.thymeleaf.org"
       xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
 <head>
     <meta charset="UTF-8">
@@ -14,6 +15,7 @@
     Dobrodošli u demo web shop aplikaciju izrađenu u Spring Boot okruženju.
 </p>
 
+<!-- JAVNI LINKOVI -->
 <div class="list-group mb-4">
     <a class="list-group-item list-group-item-action"
        th:href="@{/categories}">
@@ -26,7 +28,7 @@
     </a>
 </div>
 
-<!-- ADMIN sekcija (vidljiva samo adminu) -->
+<!-- ADMIN SEKCIJA -->
 <div sec:authorize="hasRole('ADMIN')" class="mb-4">
     <h5 class="mb-2">Administracija</h5>
     <div class="list-group">
@@ -37,21 +39,36 @@
     </div>
 </div>
 
-<!-- AUTH sekcija -->
-<div class="mt-4">
+<!-- AUTH SEKCIJA -->
+<div class="mt-4 d-flex align-items-center gap-3">
+
+    <!-- ANON KORISNIK -->
     <div sec:authorize="isAnonymous()">
-        <a class="btn btn-primary" th:href="@{/login}">
+        <a class="btn btn-primary me-2"
+           th:href="@{/login}">
             Prijava
+        </a>
+
+        <a class="btn btn-outline-secondary"
+           th:href="@{/register}">
+            Registracija
         </a>
     </div>
 
-    <div sec:authorize="isAuthenticated()">
-        <form th:action="@{/logout}" method="post">
+    <!-- PRIJAVLJENI KORISNIK -->
+    <div sec:authorize="isAuthenticated()" class="d-flex align-items-center gap-3">
+        <span class="text-muted">
+            Prijavljen kao
+            <strong th:text="${#authentication.name}">korisnik</strong>
+        </span>
+
+        <form th:action="@{/logout}" method="post" class="mb-0">
             <button class="btn btn-outline-danger" type="submit">
                 Odjava
             </button>
         </form>
     </div>
+
 </div>
 
 </body>

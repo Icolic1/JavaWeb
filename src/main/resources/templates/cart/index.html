@@ -78,12 +78,14 @@
                     <strong th:text="${totalAmount}">0.00</strong>
                 </div>
 
-                <!-- Checkout dolazi nakon ovog bloka -->
+                <!-- Checkout -->
                 <div class="mt-3">
-                    <a class="btn btn-success w-100 disabled" href="#" aria-disabled="true">
-                        Checkout (uskoro)
+                    <a class="btn btn-success w-100"
+                       th:href="@{/checkout}">
+                        Checkout
                     </a>
                 </div>
+
             </div>
         </div>
     </div>

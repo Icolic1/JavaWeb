@@ -1,22 +1,21 @@
 package org.example.javaweb.config;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
-import org.springframework.security.core.userdetails.User;
-import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.core.userdetails.UserDetailsService;
-import org.springframework.security.provisioning.InMemoryUserDetailsManager;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 
 @Configuration
+@RequiredArgsConstructor
 public class SecurityConfig {
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         return http
                 .authorizeHttpRequests(auth -> auth
-                        // public
                         .requestMatchers(
                                 "/",
                                 "/login",
@@ -27,30 +26,26 @@ public class SecurityConfig {
                                 "/webjars/**",
                                 "/categories/**",
                                 "/products/**",
-                                "/cart/**"
+                                "/cart/**",
+                                "/register/**"
                         ).permitAll()
 
                         .requestMatchers("/checkout/**").hasRole("USER")
-
                         .requestMatchers("/my/**").hasRole("USER")
 
-
-
-
-                        // admin only
                         .requestMatchers("/admin/**").hasRole("ADMIN")
 
-                        // everything else requires login
                         .anyRequest().authenticated()
                 )
                 .exceptionHandling(ex -> ex
                         .accessDeniedPage("/access-denied")
                 )
                 .formLogin(form -> form
-                        .defaultSuccessUrl("/", true)
+                        // default Spring login page
                         .permitAll()
+                        // KLJUČ: ignorira saved request (npr. /admin/...)
+                        .defaultSuccessUrl("/", true)
                 )
-
                 .logout(logout -> logout
                         .logoutSuccessUrl("/")
                         .permitAll()
@@ -58,18 +53,10 @@ public class SecurityConfig {
                 .build();
     }
 
+
+
     @Bean
-    public UserDetailsService users() {
-        UserDetails admin = User.withUsername("admin")
-                .password("{noop}admin")
-                .roles("ADMIN")
-                .build();
-
-        UserDetails user = User.withUsername("user")
-                .password("{noop}user")
-                .roles("USER")
-                .build();
-
-        return new InMemoryUserDetailsManager(admin, user);
+    public PasswordEncoder passwordEncoder() {
+        return new BCryptPasswordEncoder();
     }
 }
