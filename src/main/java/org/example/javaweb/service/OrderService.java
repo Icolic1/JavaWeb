@@ -1,6 +1,7 @@
 package org.example.javaweb.service;
 
 import org.example.javaweb.domain.Order;
+import org.example.javaweb.domain.OrderStatus;
 import org.example.javaweb.domain.PaymentMethod;
 import org.example.javaweb.service.dto.CreateOrderItemDto;
 
@@ -15,4 +16,6 @@ public interface OrderService {
     List<Order> findAll();
 
     Order findById(Long id);
+
+    Order updateStatus(Long orderId, OrderStatus newStatus);
 }

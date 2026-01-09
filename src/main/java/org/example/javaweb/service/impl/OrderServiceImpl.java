@@ -3,6 +3,7 @@ package org.example.javaweb.service.impl;
 import lombok.RequiredArgsConstructor;
 import org.example.javaweb.domain.Order;
 import org.example.javaweb.domain.OrderItem;
+import org.example.javaweb.domain.OrderStatus;
 import org.example.javaweb.domain.PaymentMethod;
 import org.example.javaweb.repository.OrderRepository;
 import org.example.javaweb.service.OrderService;
@@ -70,5 +71,37 @@ public class OrderServiceImpl implements OrderService {
     public Order findById(Long id) {
         return orderRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Order not found: " + id));
+    }
+
+    @Override
+    @Transactional
+    public Order updateStatus(Long orderId, OrderStatus newStatus) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new IllegalArgumentException("Order not found: " + orderId));
+
+        OrderStatus current = order.getStatus();
+
+        if (current == newStatus) {
+            return order; // no-op
+        }
+
+        if (!isAllowedTransition(current, newStatus)) {
+            throw new IllegalStateException(
+                    "Invalid status transition: " + current + " -> " + newStatus
+            );
+        }
+
+        order.setStatus(newStatus);
+        return orderRepository.save(order);
+    }
+
+    private boolean isAllowedTransition(OrderStatus from, OrderStatus to) {
+        // Minimalna state machine logika (proširi po potrebi)
+        return switch (from) {
+            case CREATED -> (to == OrderStatus.PAID || to == OrderStatus.CANCELLED);
+            case PAID -> (to == OrderStatus.SHIPPED || to == OrderStatus.CANCELLED);
+            case SHIPPED -> false;     // nakon slanja nema promjena
+            case CANCELLED -> false;   // otkazano je terminalno
+        };
     }
 }
