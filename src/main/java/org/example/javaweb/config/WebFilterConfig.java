@@ -12,7 +12,7 @@ public class WebFilterConfig {
     public FilterRegistrationBean<RequestTimingFilter> requestTimingFilter() {
         FilterRegistrationBean<RequestTimingFilter> reg = new FilterRegistrationBean<>();
         reg.setFilter(new RequestTimingFilter());
-        reg.setOrder(1); // ranije u lancu
+        reg.setOrder(1);
         reg.addUrlPatterns("/*");
         return reg;
     }

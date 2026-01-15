@@ -45,15 +45,15 @@ public class Cart {
         CartItem existing = items.get(productId);
         if (existing == null) return;
 
-        int qty = normalizeQty(quantity);
-        qty = Math.min(qty, maxStock);
-
-        if (qty <= 0) {
+        if (quantity <= 0) {
             items.remove(productId);
-        } else {
-            existing.setQuantity(qty);
+            return;
         }
+
+        int qty = Math.min(quantity, maxStock);
+        existing.setQuantity(qty);
     }
+
 
     public void remove(Long productId) {
         items.remove(productId);

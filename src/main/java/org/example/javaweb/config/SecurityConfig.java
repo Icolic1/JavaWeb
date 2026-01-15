@@ -44,7 +44,7 @@ public class SecurityConfig {
                         // default Spring login page
                         .permitAll()
                         // KLJUČ: ignorira saved request (npr. /admin/...)
-                        .defaultSuccessUrl("/", true)
+                        .defaultSuccessUrl("/", false)
                 )
                 .logout(logout -> logout
                         .logoutSuccessUrl("/")

@@ -4,6 +4,10 @@
     <meta charset="UTF-8">
     <title>Košarica</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <!-- CSRF za AJAX (Spring Security) -->
+    <meta name="_csrf" th:content="${_csrf.token}">
+    <meta name="_csrf_header" th:content="${_csrf.headerName}">
 </head>
 <body class="container py-4">
 
@@ -20,14 +24,18 @@
     </div>
 </div>
 
+<!-- server-side flash (ako dođe redirect) -->
 <div th:if="${success}" class="alert alert-success" th:text="${success}"></div>
 <div th:if="${error}" class="alert alert-danger" th:text="${error}"></div>
 
-<div th:if="${isEmpty}" class="alert alert-info">
+<!-- client-side flash (AJAX poruke) -->
+<div id="ajaxAlert" class="alert d-none" role="alert"></div>
+
+<div th:if="${isEmpty}" class="alert alert-info" id="emptyAlert">
     Košarica je prazna.
 </div>
 
-<div th:if="${!isEmpty}">
+<div th:if="${!isEmpty}" id="cartBlock">
     <table class="table table-striped align-middle">
         <thead>
         <tr>
@@ -39,24 +47,31 @@
         </tr>
         </thead>
         <tbody>
-        <tr th:each="i : ${items}">
+        <tr th:each="i : ${items}" th:attr="data-product-id=${i.productId}">
             <td>
                 <a th:href="@{/products/{id}(id=${i.productId})}" th:text="${i.name}">Naziv</a>
             </td>
             <td th:text="${i.unitPrice}">0.00</td>
 
             <td>
-                <form th:action="@{/cart/update}" method="post" class="d-flex gap-2">
+                <!-- AJAX update -->
+                <form th:action="@{/cart/update-ajax}" method="post" class="d-flex gap-2 js-cart-update">
                     <input type="hidden" name="productId" th:value="${i.productId}">
-                    <input class="form-control form-control-sm" type="number" min="1"
-                           name="quantity" th:value="${i.quantity}" style="width: 90px;">
+                    <input class="form-control form-control-sm qty-input"
+                           type="number"
+                           min="0"
+                           name="quantity"
+                           th:value="${i.quantity}"
+                           style="width: 90px;">
                     <button class="btn btn-sm btn-primary" type="submit">Ažuriraj</button>
                 </form>
+                <small class="text-muted d-block mt-1">Postavi 0 za uklanjanje stavke.</small>
             </td>
 
-            <td th:text="${i.lineTotal}">0.00</td>
+            <td class="line-total" th:text="${i.lineTotal}">0.00</td>
 
             <td class="text-end">
+                <!-- klasični remove (možeš kasnije i ovo prebaciti na AJAX) -->
                 <form th:action="@{/cart/remove}" method="post">
                     <input type="hidden" name="productId" th:value="${i.productId}">
                     <button class="btn btn-sm btn-outline-danger" type="submit">Ukloni</button>
@@ -71,25 +86,109 @@
             <div class="card-body">
                 <div class="d-flex justify-content-between">
                     <span class="text-muted">Ukupno artikala:</span>
-                    <strong th:text="${totalQuantity}">0</strong>
+                    <strong id="totalQuantity" th:text="${totalQuantity}">0</strong>
                 </div>
                 <div class="d-flex justify-content-between mt-2">
                     <span class="text-muted">Ukupan iznos:</span>
-                    <strong th:text="${totalAmount}">0.00</strong>
+                    <strong id="totalAmount" th:text="${totalAmount}">0.00</strong>
                 </div>
 
-                <!-- Checkout -->
                 <div class="mt-3">
-                    <a class="btn btn-success w-100"
-                       th:href="@{/checkout}">
+                    <a class="btn btn-success w-100" th:href="@{/checkout}">
                         Checkout
                     </a>
                 </div>
-
             </div>
         </div>
     </div>
 </div>
+
+<script>
+    (function () {
+        const alertEl = document.getElementById("ajaxAlert");
+
+        const getCsrf = () => {
+            const token = document.querySelector('meta[name="_csrf"]')?.getAttribute("content");
+            const header = document.querySelector('meta[name="_csrf_header"]')?.getAttribute("content");
+            return { token, header };
+        };
+
+        const showAlert = (type, message) => {
+            if (!alertEl) return;
+            alertEl.classList.remove("d-none", "alert-success", "alert-danger", "alert-info");
+            alertEl.classList.add(type === "success" ? "alert-success" : "alert-danger");
+            alertEl.textContent = message || (type === "success" ? "Uspjeh." : "Greška.");
+        };
+
+        document.querySelectorAll(".js-cart-update").forEach(form => {
+            form.addEventListener("submit", async (e) => {
+                e.preventDefault();
+
+                const fd = new FormData(form);
+                const productId = fd.get("productId");
+
+                const { token, header } = getCsrf();
+
+                try {
+                    const res = await fetch(form.getAttribute("action"), {
+                        method: "POST",
+                        headers: {
+                            ...(header && token ? { [header]: token } : {}),
+                            "Accept": "application/json"
+                        },
+                        body: fd
+                    });
+
+                    if (!res.ok) {
+                        showAlert("error", "Greška kod ažuriranja košarice.");
+                        return;
+                    }
+
+                    const data = await res.json();
+
+                    if (!data.ok) {
+                        showAlert("error", data.message || "Neuspješno ažuriranje.");
+                        return;
+                    }
+
+                    // ako je košarica prazna -> najjednostavnije reload (ili kasnije full DOM toggle)
+                    if (data.isEmpty) {
+                        location.reload();
+                        return;
+                    }
+
+                    const row = document.querySelector(`tr[data-product-id="${productId}"]`);
+
+                    // quantity 0 -> ukloni red
+                    if (data.quantity === 0) {
+                        if (row) row.remove();
+                    } else {
+                        // update input i line total
+                        if (row) {
+                            const qtyInput = row.querySelector(".qty-input");
+                            if (qtyInput) qtyInput.value = data.quantity;
+
+                            const lineTotalEl = row.querySelector(".line-total");
+                            if (lineTotalEl) lineTotalEl.textContent = data.lineTotal;
+                        }
+                    }
+
+                    // update totals
+                    const totalQtyEl = document.getElementById("totalQuantity");
+                    const totalAmtEl = document.getElementById("totalAmount");
+                    if (totalQtyEl) totalQtyEl.textContent = data.totalQuantity;
+                    if (totalAmtEl) totalAmtEl.textContent = data.totalAmount;
+
+                    showAlert("success", data.message || "Košarica je ažurirana.");
+
+                } catch (err) {
+                    console.error(err);
+                    showAlert("error", "Network greška.");
+                }
+            });
+        });
+    })();
+</script>
 
 </body>
 </html>

@@ -3,11 +3,14 @@ package org.example.javaweb.web;
 import lombok.RequiredArgsConstructor;
 import org.example.javaweb.service.ProductService;
 import org.example.javaweb.web.cart.Cart;
+import org.example.javaweb.web.dto.CartUpdateResponseDto;
 import org.example.javaweb.web.mapper.CartMapper;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+
+import java.math.BigDecimal;
 
 @Controller
 @RequestMapping("/cart")
@@ -90,4 +93,54 @@ public class CartController {
         ra.addFlashAttribute("success", "Košarica je ispražnjena.");
         return "redirect:/cart";
     }
+
+    @PostMapping(
+            value = "/update-ajax",
+            consumes = "application/x-www-form-urlencoded",
+            produces = "application/json"
+    )
+    public CartUpdateResponseDto updateAjax(@RequestParam Long productId,
+                                            @RequestParam int quantity,
+                                            @ModelAttribute("cart") Cart cart) {
+
+        var product = productService.findById(productId);
+
+        // ako nema stocka -> makni iz košarice
+        if (product.getStock() <= 0) {
+            cart.remove(productId);
+            return new CartUpdateResponseDto(
+                    true,
+                    productId,
+                    0,
+                    BigDecimal.ZERO,
+                    cart.getTotalQuantity(),
+                    cart.getTotalAmount(),
+                    cart.isEmpty(),
+                    "Proizvod više nije dostupan pa je uklonjen iz košarice."
+            );
+        }
+
+        // quantity <=0 => remove, inače clamp na maxStock
+        cart.setQuantity(productId, quantity, product.getStock());
+
+        // pronađi stavku nakon update-a (možda je obrisana)
+        var itemOpt = cart.getItems().stream()
+                .filter(i -> i.getProductId().equals(productId))
+                .findFirst();
+
+        int finalQty = itemOpt.map(org.example.javaweb.web.cart.CartItem::getQuantity).orElse(0);
+        BigDecimal lineTotal = itemOpt.map(org.example.javaweb.web.cart.CartItem::getLineTotal).orElse(BigDecimal.ZERO);
+
+        return new CartUpdateResponseDto(
+                true,
+                productId,
+                finalQty,
+                lineTotal,
+                cart.getTotalQuantity(),
+                cart.getTotalAmount(),
+                cart.isEmpty(),
+                "Košarica je ažurirana."
+        );
+    }
+
 }

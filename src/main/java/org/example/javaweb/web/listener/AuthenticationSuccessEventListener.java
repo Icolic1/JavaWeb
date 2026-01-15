@@ -6,6 +6,7 @@ import org.example.javaweb.repository.LoginAuditRepository;
 import org.springframework.context.event.EventListener;
 import org.springframework.security.authentication.event.AuthenticationSuccessEvent;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.web.authentication.WebAuthenticationDetails;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -19,10 +20,19 @@ public class AuthenticationSuccessEventListener {
         Authentication auth = event.getAuthentication();
         if (auth == null || auth.getName() == null) return;
 
+        String ip = extractIp(auth);
+
         loginAuditRepository.save(LoginAudit.builder()
                 .username(auth.getName())
-                // Listener nema trivijalan IP bez dodatne konfiguracije → stavi placeholder
-                .ipAddress("N/A")
+                .ipAddress(ip)
                 .build());
+    }
+
+    private String extractIp(Authentication auth) {
+        Object details = auth.getDetails();
+        if (details instanceof WebAuthenticationDetails webDetails) {
+            return webDetails.getRemoteAddress();
+        }
+        return "UNKNOWN";
     }
 }
